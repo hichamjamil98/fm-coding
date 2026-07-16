@@ -1,6 +1,11 @@
 /* ==========================================================================
-   HOME — SWIPER INFINITE LOOP
+   HOME — STABLE INFINITE SWIPER
    Requires Swiper to be loaded before this file.
+
+   This version does not use Swiper's native loop mode.
+   Instead, it builds several identical slide groups and silently recenters
+   the slider on an equivalent copy. This is more stable when the original
+   slider contains only two slides.
 ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -28,18 +33,19 @@ document.addEventListener("DOMContentLoaded", () => {
         wrapper.querySelectorAll(":scope > .swiper-slide")
       );
   
-      if (originalSlides.length < 2) return;
+      const originalCount = originalSlides.length;
+  
+      if (originalCount < 2) return;
   
       /*
-        Swiper loop needs enough physical slides to prevent empty space.
+        Build five identical groups:
+        [group 0][group 1][group 2][group 3][group 4]
   
-        With only two CMS/static slides and slidesPerView greater than 1,
-        Swiper may not have enough slides around the active slide.
-  
-        We duplicate the original slides before initialization until there
-        are at least six physical slides.
+        The slider starts inside group 2.
+        When it reaches group 0, 1, 3 or 4, it is silently moved back
+        to the equivalent slide in group 2.
       */
-      ensureEnoughSlides(wrapper, originalSlides, 6);
+      buildCircularTrack(wrapper, originalSlides, 5);
   
       sliderElement.dataset.swiperInitialized = "true";
       sliderElement.dataset.homeSwiper = "";
@@ -61,28 +67,43 @@ document.addEventListener("DOMContentLoaded", () => {
         section?.querySelector("[data-swiper-pagination]") ||
         sliderElement.querySelector(".swiper-pagination");
   
+      const middleGroupStart = originalCount * 2;
+  
       const options = {
+        initialSlide: middleGroupStart,
+  
         slidesPerView: 1,
         spaceBetween: 16,
   
-        loop: true,
-        loopAdditionalSlides: 4,
-        loopPreventsSliding: false,
+        loop: false,
+        rewind: false,
   
-        speed: 950,
+        speed: 900,
   
         grabCursor: true,
         watchSlidesProgress: true,
+  
         observer: true,
         observeParents: true,
-        observeSlideChildren: true,
         resizeObserver: true,
+  
+        followFinger: true,
+        simulateTouch: true,
+        allowTouchMove: true,
+        touchRatio: 1,
+  
+        threshold: 5,
+        longSwipes: true,
+        longSwipesRatio: 0.2,
+        longSwipesMs: 250,
+        shortSwipes: true,
   
         resistance: true,
         resistanceRatio: 0.65,
   
-        threshold: 5,
         touchStartPreventDefault: false,
+        touchMoveStopPropagation: false,
+  
         preventClicks: true,
         preventClicksPropagation: true,
   
@@ -106,17 +127,17 @@ document.addEventListener("DOMContentLoaded", () => {
   
         breakpoints: {
           480: {
-            slidesPerView: 1.05,
+            slidesPerView: 1.04,
             spaceBetween: 16
           },
   
           768: {
-            slidesPerView: 1.08,
+            slidesPerView: 1.06,
             spaceBetween: 20
           },
   
           992: {
-            slidesPerView: 1.12,
+            slidesPerView: 1.08,
             spaceBetween: 24
           }
         },
@@ -127,31 +148,28 @@ document.addEventListener("DOMContentLoaded", () => {
           },
   
           init(swiper) {
-            updateSlideVisibility(swiper);
+            updateSlideOpacity(swiper);
           },
   
           setTranslate(swiper) {
-            updateSlideVisibility(swiper);
-          },
-  
-          slideChange(swiper) {
-            updateSlideVisibility(swiper);
+            updateSlideOpacity(swiper);
           },
   
           transitionStart(swiper) {
-            updateSlideVisibility(swiper);
+            updateSlideOpacity(swiper);
           },
   
           transitionEnd(swiper) {
-            updateSlideVisibility(swiper);
+            recenterCircularTrack(swiper, originalCount);
+            updateSlideOpacity(swiper);
           },
   
-          loopFix(swiper) {
-            updateSlideVisibility(swiper);
+          touchEnd(swiper) {
+            updateSlideOpacity(swiper);
           },
   
           resize(swiper) {
-            updateSlideVisibility(swiper);
+            updateSlideOpacity(swiper);
           }
         }
       };
@@ -166,94 +184,154 @@ document.addEventListener("DOMContentLoaded", () => {
       if (pagination) {
         options.pagination = {
           el: pagination,
-          clickable: true
+          clickable: true,
+          renderBullet(index, className) {
+            const realIndex = index % originalCount;
+  
+            /*
+              Only the first originalCount bullets are intended to be visible.
+              CSS hides duplicated pagination bullets if pagination is used.
+            */
+            return `
+              <span
+                class="${className}"
+                data-real-bullet="${realIndex}"
+              ></span>
+            `;
+          }
         };
       }
   
       const swiper = new Swiper(sliderElement, options);
   
       sliderElement.swiperInstance = swiper;
+      sliderElement.dataset.originalSlideCount = String(originalCount);
     });
   }
   
   /* ==========================================================================
-     CREATE ENOUGH PHYSICAL SLIDES FOR A SEAMLESS LOOP
+     BUILD THE CIRCULAR TRACK
   ========================================================================== */
   
-  function ensureEnoughSlides(wrapper, originalSlides, minimumSlides) {
-    let physicalCount = wrapper.children.length;
-    let cloneIndex = 0;
+  function buildCircularTrack(wrapper, originalSlides, groupCount) {
+    const fragment = document.createDocumentFragment();
   
-    while (physicalCount < minimumSlides) {
-      const sourceSlide =
-        originalSlides[cloneIndex % originalSlides.length];
+    for (let groupIndex = 0; groupIndex < groupCount; groupIndex += 1) {
+      originalSlides.forEach((sourceSlide, realIndex) => {
+        const slide =
+          groupIndex === 0
+            ? sourceSlide
+            : sourceSlide.cloneNode(true);
   
-      const clone = sourceSlide.cloneNode(true);
+        cleanSlideState(slide);
   
-      clone.removeAttribute("id");
-      clone.removeAttribute("aria-label");
-      clone.removeAttribute("aria-hidden");
-      clone.removeAttribute("role");
+        slide.dataset.realSlideIndex = String(realIndex);
+        slide.dataset.slideGroup = String(groupIndex);
   
-      clone.classList.remove(
-        "swiper-slide-active",
-        "swiper-slide-prev",
-        "swiper-slide-next",
-        "swiper-slide-visible",
-        "is--past",
-        "is--active",
-        "is--next"
-      );
+        if (groupIndex > 0) {
+          slide.dataset.homeClone = "true";
+        }
   
-      clone.dataset.homeClone = "true";
-  
-      wrapper.appendChild(clone);
-  
-      cloneIndex += 1;
-      physicalCount += 1;
+        fragment.appendChild(slide);
+      });
     }
+  
+    wrapper.innerHTML = "";
+    wrapper.appendChild(fragment);
+  }
+  
+  function cleanSlideState(slide) {
+    slide.removeAttribute("id");
+    slide.removeAttribute("role");
+    slide.removeAttribute("aria-label");
+    slide.removeAttribute("aria-hidden");
+    slide.removeAttribute("style");
+  
+    slide.classList.remove(
+      "swiper-slide-active",
+      "swiper-slide-prev",
+      "swiper-slide-next",
+      "swiper-slide-visible",
+      "swiper-slide-fully-visible",
+      "is--past",
+      "is--active",
+      "is--future"
+    );
   }
   
   /* ==========================================================================
-     SLIDE VISIBILITY
+     SILENT RECENTERING
   
-     Swiper calculates slide.progress:
-     - negative value: slide is to the left of the active position;
-     - zero: active slide;
-     - positive value: slide is active or to the right.
-  
-     Slides moving to the left fade out.
-     All slides on the active/right side remain visible, including clones.
+     The equivalent target always belongs to the middle group.
+     Because the destination contains the same content and has the same width,
+     the zero-duration jump is visually invisible.
   ========================================================================== */
   
-  function updateSlideVisibility(swiper) {
+  function recenterCircularTrack(swiper, originalCount) {
+    const firstSafeIndex = originalCount;
+    const lastSafeIndex = originalCount * 4 - 1;
+  
+    if (
+      swiper.activeIndex >= firstSafeIndex &&
+      swiper.activeIndex <= lastSafeIndex
+    ) {
+      return;
+    }
+  
+    const realIndex =
+      ((swiper.activeIndex % originalCount) + originalCount) %
+      originalCount;
+  
+    const equivalentMiddleIndex = originalCount * 2 + realIndex;
+  
+    swiper.slideTo(equivalentMiddleIndex, 0, false);
+    swiper.updateSlidesProgress();
+  }
+  
+  /* ==========================================================================
+     LEFT-SIDE OPACITY
+  
+     slide.progress is continuously updated while autoplaying and dragging:
+     - progress < 0: slide is moving or already positioned to the left;
+     - progress = 0: active slide;
+     - progress > 0: slide is on the right.
+  
+     Left slides fade progressively:
+     progress  0.00 → opacity 1
+     progress -0.50 → opacity 0.5
+     progress -1.00 → opacity 0
+  ========================================================================== */
+  
+  function updateSlideOpacity(swiper) {
     swiper.slides.forEach((slide) => {
       const progress = Number.isFinite(slide.progress)
         ? slide.progress
         : 0;
   
-      const isPast = progress < -0.05;
-      const isActive = Math.abs(progress) <= 0.05;
-      const isFuture = progress > 0.05;
-  
-      slide.classList.toggle("is--past", isPast);
-      slide.classList.toggle("is--active", isActive);
-      slide.classList.toggle("is--future", isFuture);
-  
-      /*
-        Keep every slide in the layout.
-        We only animate opacity, never display or visibility.
-      */
-      const opacity = isPast
-        ? Math.max(0, 1 + progress)
-        : 1;
+      const opacity =
+        progress < 0
+          ? clamp(1 + progress, 0, 1)
+          : 1;
   
       slide.style.opacity = String(opacity);
-      slide.style.pointerEvents = isPast ? "none" : "auto";
+      slide.style.visibility = "visible";
+      slide.style.pointerEvents =
+        opacity <= 0.01 ? "none" : "auto";
+  
+      slide.classList.toggle("is--past", progress < -0.01);
+      slide.classList.toggle(
+        "is--active",
+        Math.abs(progress) <= 0.01
+      );
+      slide.classList.toggle("is--future", progress > 0.01);
   
       slide.setAttribute(
         "aria-hidden",
         opacity <= 0.01 ? "true" : "false"
       );
     });
+  }
+  
+  function clamp(value, minimum, maximum) {
+    return Math.min(Math.max(value, minimum), maximum);
   }
