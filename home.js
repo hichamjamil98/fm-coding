@@ -1,34 +1,49 @@
 /* ==========================================================================
-   HOME — SWIPER SLIDER
+   HOME — SWIPER INFINITE LOOP
    Requires Swiper to be loaded before this file.
 ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
-    initHomeSwiper();
+    initHomeSwipers();
   });
   
   /* ==========================================================================
-     HOME SWIPER
+     INITIALIZATION
   ========================================================================== */
   
-  function initHomeSwiper() {
+  function initHomeSwipers() {
     if (typeof Swiper === "undefined") {
       console.warn("[Home Swiper] Swiper is missing.");
       return;
     }
   
-    const sliders = document.querySelectorAll(".swiper");
-  
-    sliders.forEach((sliderElement, sliderIndex) => {
+    document.querySelectorAll(".swiper").forEach((sliderElement, sliderIndex) => {
       if (sliderElement.dataset.swiperInitialized === "true") return;
   
       const wrapper = sliderElement.querySelector(".swiper-wrapper");
-      const slides = sliderElement.querySelectorAll(".swiper-slide");
   
-      if (!wrapper || slides.length < 2) return;
+      if (!wrapper) return;
+  
+      const originalSlides = Array.from(
+        wrapper.querySelectorAll(":scope > .swiper-slide")
+      );
+  
+      if (originalSlides.length < 2) return;
+  
+      /*
+        Swiper loop needs enough physical slides to prevent empty space.
+  
+        With only two CMS/static slides and slidesPerView greater than 1,
+        Swiper may not have enough slides around the active slide.
+  
+        We duplicate the original slides before initialization until there
+        are at least six physical slides.
+      */
+      ensureEnoughSlides(wrapper, originalSlides, 6);
   
       sliderElement.dataset.swiperInitialized = "true";
-      sliderElement.setAttribute("data-home-swiper", "");
+      sliderElement.dataset.homeSwiper = "";
+      sliderElement.dataset.swiperIndex = String(sliderIndex);
   
       const section =
         sliderElement.closest(".section") ||
@@ -46,27 +61,30 @@ document.addEventListener("DOMContentLoaded", () => {
         section?.querySelector("[data-swiper-pagination]") ||
         sliderElement.querySelector(".swiper-pagination");
   
-      const swiperOptions = {
+      const options = {
         slidesPerView: 1,
         spaceBetween: 16,
   
         loop: true,
-        loopAdditionalSlides: 2,
+        loopAdditionalSlides: 4,
+        loopPreventsSliding: false,
   
-        speed: 900,
+        speed: 950,
   
         grabCursor: true,
         watchSlidesProgress: true,
-  
         observer: true,
         observeParents: true,
+        observeSlideChildren: true,
         resizeObserver: true,
   
         resistance: true,
-        resistanceRatio: 0.7,
+        resistanceRatio: 0.65,
   
         threshold: 5,
         touchStartPreventDefault: false,
+        preventClicks: true,
+        preventClicksPropagation: true,
   
         autoplay: {
           delay: 4000,
@@ -109,70 +127,133 @@ document.addEventListener("DOMContentLoaded", () => {
           },
   
           init(swiper) {
-            updateHomeSlideStates(swiper);
+            updateSlideVisibility(swiper);
+          },
+  
+          setTranslate(swiper) {
+            updateSlideVisibility(swiper);
           },
   
           slideChange(swiper) {
-            updateHomeSlideStates(swiper);
+            updateSlideVisibility(swiper);
           },
   
           transitionStart(swiper) {
-            updateHomeSlideStates(swiper);
+            updateSlideVisibility(swiper);
           },
   
           transitionEnd(swiper) {
-            updateHomeSlideStates(swiper);
+            updateSlideVisibility(swiper);
           },
   
           loopFix(swiper) {
-            updateHomeSlideStates(swiper);
+            updateSlideVisibility(swiper);
           },
   
           resize(swiper) {
-            updateHomeSlideStates(swiper);
+            updateSlideVisibility(swiper);
           }
         }
       };
   
       if (previousButton && nextButton) {
-        swiperOptions.navigation = {
+        options.navigation = {
           prevEl: previousButton,
           nextEl: nextButton
         };
       }
   
       if (pagination) {
-        swiperOptions.pagination = {
+        options.pagination = {
           el: pagination,
           clickable: true
         };
       }
   
-      const swiper = new Swiper(sliderElement, swiperOptions);
+      const swiper = new Swiper(sliderElement, options);
   
       sliderElement.swiperInstance = swiper;
-      sliderElement.dataset.swiperIndex = String(sliderIndex);
     });
   }
   
   /* ==========================================================================
-     SLIDE STATES — LOOP SAFE
+     CREATE ENOUGH PHYSICAL SLIDES FOR A SEAMLESS LOOP
   ========================================================================== */
   
-  function updateHomeSlideStates(swiper) {
+  function ensureEnoughSlides(wrapper, originalSlides, minimumSlides) {
+    let physicalCount = wrapper.children.length;
+    let cloneIndex = 0;
+  
+    while (physicalCount < minimumSlides) {
+      const sourceSlide =
+        originalSlides[cloneIndex % originalSlides.length];
+  
+      const clone = sourceSlide.cloneNode(true);
+  
+      clone.removeAttribute("id");
+      clone.removeAttribute("aria-label");
+      clone.removeAttribute("aria-hidden");
+      clone.removeAttribute("role");
+  
+      clone.classList.remove(
+        "swiper-slide-active",
+        "swiper-slide-prev",
+        "swiper-slide-next",
+        "swiper-slide-visible",
+        "is--past",
+        "is--active",
+        "is--next"
+      );
+  
+      clone.dataset.homeClone = "true";
+  
+      wrapper.appendChild(clone);
+  
+      cloneIndex += 1;
+      physicalCount += 1;
+    }
+  }
+  
+  /* ==========================================================================
+     SLIDE VISIBILITY
+  
+     Swiper calculates slide.progress:
+     - negative value: slide is to the left of the active position;
+     - zero: active slide;
+     - positive value: slide is active or to the right.
+  
+     Slides moving to the left fade out.
+     All slides on the active/right side remain visible, including clones.
+  ========================================================================== */
+  
+  function updateSlideVisibility(swiper) {
     swiper.slides.forEach((slide) => {
-      const isPrevious = slide.classList.contains("swiper-slide-prev");
-      const isActive = slide.classList.contains("swiper-slide-active");
-      const isNext = slide.classList.contains("swiper-slide-next");
+      const progress = Number.isFinite(slide.progress)
+        ? slide.progress
+        : 0;
   
-      slide.classList.toggle("is--past", isPrevious);
+      const isPast = progress < -0.05;
+      const isActive = Math.abs(progress) <= 0.05;
+      const isFuture = progress > 0.05;
+  
+      slide.classList.toggle("is--past", isPast);
       slide.classList.toggle("is--active", isActive);
-      slide.classList.toggle("is--next", isNext);
+      slide.classList.toggle("is--future", isFuture);
   
-      if (!isPrevious && !isActive && !isNext) {
-        slide.classList.remove("is--past", "is--active", "is--next");
-      }
+      /*
+        Keep every slide in the layout.
+        We only animate opacity, never display or visibility.
+      */
+      const opacity = isPast
+        ? Math.max(0, 1 + progress)
+        : 1;
   
-      slide.setAttribute("aria-hidden", isPrevious ? "true" : "false");
+      slide.style.opacity = String(opacity);
+      slide.style.pointerEvents = isPast ? "none" : "auto";
+  
+      slide.setAttribute(
+        "aria-hidden",
+        opacity <= 0.01 ? "true" : "false"
+      );
     });
   }
