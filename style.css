@@ -171,27 +171,22 @@ body {
 
 /* ==========================================================================
    DESKTOP NAVBAR MASK ON SCROLL
-   Webflow keeps control of position: fixed and the navbar layout.
+   The mask stays visible at all times.
+   Only its background color changes.
 ========================================================================== */
 
 @media screen and (min-width: 992px) {
-  /*
-    At the top of the page, the black mask is hidden.
-    The original navbar appearance created in Webflow remains visible.
-  */
   .navbar .navbar--mask {
-    opacity: 0;
+    opacity: 1 !important;
+    visibility: visible !important;
     pointer-events: none;
-    transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-    will-change: opacity;
+    background-color: rgba(0, 0, 0, 0);
+    transition: background-color 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: background-color;
   }
 
-  /*
-    Once the page leaves the top, only the mask fades in.
-    The navbar itself keeps its Webflow fixed positioning.
-  */
   .navbar.is--scrolled .navbar--mask {
-    opacity: 1;
+    background-color: #000000;
   }
 }
 

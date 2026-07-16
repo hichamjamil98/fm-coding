@@ -620,15 +620,6 @@ function initNavbarScrollState() {
     const isDesktop = window.innerWidth >= DESKTOP_BREAKPOINT;
     const hasScrolled = window.scrollY > SCROLL_THRESHOLD;
 
-    /*
-      Desktop:
-      - top of page: mask is transparent;
-      - after scroll: mask becomes visible.
-
-      Tablet/mobile:
-      - remove the JS class;
-      - Webflow keeps full control of the permanent black background.
-    */
     navbar.classList.toggle(
       "is--scrolled",
       isDesktop && hasScrolled
