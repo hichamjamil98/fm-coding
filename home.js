@@ -1,11 +1,12 @@
 /* ==========================================================================
-   HOME — STABLE INFINITE SWIPER
+   HOME — SWIPER AUTOPLAY LOOP
    Requires Swiper to be loaded before this file.
 
-   This version does not use Swiper's native loop mode.
-   Instead, it builds several identical slide groups and silently recenters
-   the slider on an equivalent copy. This is more stable when the original
-   slider contains only two slides.
+   Goals:
+   - Preserve the exact width and starting position defined in Webflow.
+   - Disable mouse/touch dragging.
+   - Keep active and upcoming slides visible.
+   - Fade only slides that move to the left.
 ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -22,34 +23,34 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
   
-    document.querySelectorAll(".swiper").forEach((sliderElement, sliderIndex) => {
-      if (sliderElement.dataset.swiperInitialized === "true") return;
+    document.querySelectorAll(".swiper").forEach((sliderElement) => {
+      if (sliderElement.dataset.cleanSwiperReady === "true") return;
   
       const wrapper = sliderElement.querySelector(".swiper-wrapper");
   
       if (!wrapper) return;
   
-      const originalSlides = Array.from(
+      /*
+        Remove clones and inline states created by older versions
+        of the custom slider script.
+      */
+      cleanupPreviousCustomSwiper(wrapper);
+  
+      const slides = Array.from(
         wrapper.querySelectorAll(":scope > .swiper-slide")
       );
   
-      const originalCount = originalSlides.length;
-  
-      if (originalCount < 2) return;
+      if (slides.length < 2) return;
   
       /*
-        Build five identical groups:
-        [group 0][group 1][group 2][group 3][group 4]
-  
-        The slider starts inside group 2.
-        When it reaches group 0, 1, 3 or 4, it is silently moved back
-        to the equivalent slide in group 2.
+        Native loop needs enough physical slides.
+        If the authored slider contains only two slides,
+        duplicate them once before Swiper initializes.
       */
-      buildCircularTrack(wrapper, originalSlides, 5);
+      ensureMinimumSlides(wrapper, slides, 4);
   
-      sliderElement.dataset.swiperInitialized = "true";
-      sliderElement.dataset.homeSwiper = "";
-      sliderElement.dataset.swiperIndex = String(sliderIndex);
+      sliderElement.dataset.cleanSwiperReady = "true";
+      sliderElement.setAttribute("data-home-swiper", "");
   
       const section =
         sliderElement.closest(".section") ||
@@ -63,49 +64,38 @@ document.addEventListener("DOMContentLoaded", () => {
         section?.querySelector("[data-swiper-next]") ||
         sliderElement.querySelector(".swiper-button-next");
   
-      const pagination =
-        section?.querySelector("[data-swiper-pagination]") ||
-        sliderElement.querySelector(".swiper-pagination");
-  
-      const middleGroupStart = originalCount * 2;
-  
       const options = {
-        initialSlide: middleGroupStart,
+        /*
+          "auto" preserves the width configured on .swiper-slide in Webflow.
+          Swiper therefore does not recalculate a different slide width.
+        */
+        slidesPerView: "auto",
+        slidesPerGroup: 1,
+        spaceBetween: 24,
   
-        slidesPerView: 1,
-        spaceBetween: 16,
+        centeredSlides: false,
+        centeredSlidesBounds: false,
   
-        loop: false,
-        rewind: false,
+        loop: true,
+        loopAdditionalSlides: 2,
+        loopPreventsSliding: true,
   
         speed: 900,
   
-        grabCursor: true,
+        /*
+          Drag is disabled completely.
+        */
+        allowTouchMove: false,
+        simulateTouch: false,
+        grabCursor: false,
+        followFinger: false,
+        touchRatio: 0,
+  
         watchSlidesProgress: true,
   
         observer: true,
         observeParents: true,
         resizeObserver: true,
-  
-        followFinger: true,
-        simulateTouch: true,
-        allowTouchMove: true,
-        touchRatio: 1,
-  
-        threshold: 5,
-        longSwipes: true,
-        longSwipesRatio: 0.2,
-        longSwipesMs: 250,
-        shortSwipes: true,
-  
-        resistance: true,
-        resistanceRatio: 0.65,
-  
-        touchStartPreventDefault: false,
-        touchMoveStopPropagation: false,
-  
-        preventClicks: true,
-        preventClicksPropagation: true,
   
         autoplay: {
           delay: 4000,
@@ -115,8 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
         },
   
         keyboard: {
-          enabled: true,
-          onlyInViewport: true
+          enabled: false
         },
   
         a11y: {
@@ -125,51 +114,33 @@ document.addEventListener("DOMContentLoaded", () => {
           nextSlideMessage: "Slide suivante"
         },
   
-        breakpoints: {
-          480: {
-            slidesPerView: 1.04,
-            spaceBetween: 16
-          },
-  
-          768: {
-            slidesPerView: 1.06,
-            spaceBetween: 20
-          },
-  
-          992: {
-            slidesPerView: 1.08,
-            spaceBetween: 24
-          }
-        },
-  
         on: {
           beforeInit(swiper) {
             swiper.el.classList.add("is--swiper-ready");
           },
   
           init(swiper) {
-            updateSlideOpacity(swiper);
+            updateLeftSlideOpacity(swiper);
           },
   
           setTranslate(swiper) {
-            updateSlideOpacity(swiper);
+            updateLeftSlideOpacity(swiper);
           },
   
           transitionStart(swiper) {
-            updateSlideOpacity(swiper);
+            updateLeftSlideOpacity(swiper);
           },
   
           transitionEnd(swiper) {
-            recenterCircularTrack(swiper, originalCount);
-            updateSlideOpacity(swiper);
+            updateLeftSlideOpacity(swiper);
           },
   
-          touchEnd(swiper) {
-            updateSlideOpacity(swiper);
+          loopFix(swiper) {
+            updateLeftSlideOpacity(swiper);
           },
   
           resize(swiper) {
-            updateSlideOpacity(swiper);
+            updateLeftSlideOpacity(swiper);
           }
         }
       };
@@ -181,149 +152,119 @@ document.addEventListener("DOMContentLoaded", () => {
         };
       }
   
-      if (pagination) {
-        options.pagination = {
-          el: pagination,
-          clickable: true,
-          renderBullet(index, className) {
-            const realIndex = index % originalCount;
-  
-            /*
-              Only the first originalCount bullets are intended to be visible.
-              CSS hides duplicated pagination bullets if pagination is used.
-            */
-            return `
-              <span
-                class="${className}"
-                data-real-bullet="${realIndex}"
-              ></span>
-            `;
-          }
-        };
-      }
-  
       const swiper = new Swiper(sliderElement, options);
   
       sliderElement.swiperInstance = swiper;
-      sliderElement.dataset.originalSlideCount = String(originalCount);
     });
   }
   
   /* ==========================================================================
-     BUILD THE CIRCULAR TRACK
+     CLEANUP OLD CUSTOM STATES
   ========================================================================== */
   
-  function buildCircularTrack(wrapper, originalSlides, groupCount) {
-    const fragment = document.createDocumentFragment();
+  function cleanupPreviousCustomSwiper(wrapper) {
+    wrapper
+      .querySelectorAll('[data-home-clone="true"]')
+      .forEach((slide) => slide.remove());
   
-    for (let groupIndex = 0; groupIndex < groupCount; groupIndex += 1) {
-      originalSlides.forEach((sourceSlide, realIndex) => {
-        const slide =
-          groupIndex === 0
-            ? sourceSlide
-            : sourceSlide.cloneNode(true);
+    wrapper
+      .querySelectorAll(":scope > .swiper-slide")
+      .forEach((slide) => {
+        slide.removeAttribute("data-real-slide-index");
+        slide.removeAttribute("data-slide-group");
+        slide.removeAttribute("data-home-clone");
+        slide.removeAttribute("aria-hidden");
   
-        cleanSlideState(slide);
+        slide.style.removeProperty("opacity");
+        slide.style.removeProperty("visibility");
+        slide.style.removeProperty("pointer-events");
   
-        slide.dataset.realSlideIndex = String(realIndex);
-        slide.dataset.slideGroup = String(groupIndex);
-  
-        if (groupIndex > 0) {
-          slide.dataset.homeClone = "true";
-        }
-  
-        fragment.appendChild(slide);
+        slide.classList.remove(
+          "is--past",
+          "is--active",
+          "is--future",
+          "is--next"
+        );
       });
-    }
-  
-    wrapper.innerHTML = "";
-    wrapper.appendChild(fragment);
-  }
-  
-  function cleanSlideState(slide) {
-    slide.removeAttribute("id");
-    slide.removeAttribute("role");
-    slide.removeAttribute("aria-label");
-    slide.removeAttribute("aria-hidden");
-    slide.removeAttribute("style");
-  
-    slide.classList.remove(
-      "swiper-slide-active",
-      "swiper-slide-prev",
-      "swiper-slide-next",
-      "swiper-slide-visible",
-      "swiper-slide-fully-visible",
-      "is--past",
-      "is--active",
-      "is--future"
-    );
   }
   
   /* ==========================================================================
-     SILENT RECENTERING
-  
-     The equivalent target always belongs to the middle group.
-     Because the destination contains the same content and has the same width,
-     the zero-duration jump is visually invisible.
+     ENSURE ENOUGH SLIDES FOR NATIVE LOOP
   ========================================================================== */
   
-  function recenterCircularTrack(swiper, originalCount) {
-    const firstSafeIndex = originalCount;
-    const lastSafeIndex = originalCount * 4 - 1;
+  function ensureMinimumSlides(wrapper, sourceSlides, minimumCount) {
+    let currentCount = wrapper.children.length;
+    let sourceIndex = 0;
   
-    if (
-      swiper.activeIndex >= firstSafeIndex &&
-      swiper.activeIndex <= lastSafeIndex
-    ) {
-      return;
+    while (currentCount < minimumCount) {
+      const source =
+        sourceSlides[sourceIndex % sourceSlides.length];
+  
+      const clone = source.cloneNode(true);
+  
+      clone.removeAttribute("id");
+      clone.removeAttribute("style");
+      clone.removeAttribute("aria-hidden");
+      clone.dataset.homeClone = "true";
+  
+      clone.classList.remove(
+        "swiper-slide-active",
+        "swiper-slide-prev",
+        "swiper-slide-next",
+        "swiper-slide-visible",
+        "swiper-slide-fully-visible",
+        "is--past",
+        "is--active",
+        "is--future",
+        "is--next"
+      );
+  
+      wrapper.appendChild(clone);
+  
+      sourceIndex += 1;
+      currentCount += 1;
     }
-  
-    const realIndex =
-      ((swiper.activeIndex % originalCount) + originalCount) %
-      originalCount;
-  
-    const equivalentMiddleIndex = originalCount * 2 + realIndex;
-  
-    swiper.slideTo(equivalentMiddleIndex, 0, false);
-    swiper.updateSlidesProgress();
   }
   
   /* ==========================================================================
      LEFT-SIDE OPACITY
   
-     slide.progress is continuously updated while autoplaying and dragging:
-     - progress < 0: slide is moving or already positioned to the left;
-     - progress = 0: active slide;
-     - progress > 0: slide is on the right.
+     The Webflow position of the Swiper container is used as the fixed anchor.
   
-     Left slides fade progressively:
-     progress  0.00 → opacity 1
-     progress -0.50 → opacity 0.5
-     progress -1.00 → opacity 0
+     - A slide at or to the right of that anchor keeps opacity 1.
+     - A slide moving to the left fades progressively to opacity 0.
+     - Upcoming slides and loop clones are never hidden.
   ========================================================================== */
   
-  function updateSlideOpacity(swiper) {
-    swiper.slides.forEach((slide) => {
-      const progress = Number.isFinite(slide.progress)
-        ? slide.progress
-        : 0;
+  function updateLeftSlideOpacity(swiper) {
+    const sliderRect = swiper.el.getBoundingClientRect();
+    const anchorX = sliderRect.left;
   
-      const opacity =
-        progress < 0
-          ? clamp(1 + progress, 0, 1)
-          : 1;
+    swiper.slides.forEach((slide) => {
+      const slideRect = slide.getBoundingClientRect();
+      const distanceFromAnchor = slideRect.left - anchorX;
+  
+      let opacity = 1;
+  
+      if (distanceFromAnchor < 0) {
+        const fadeDistance = Math.max(slideRect.width * 0.45, 1);
+  
+        opacity = clamp(
+          1 + distanceFromAnchor / fadeDistance,
+          0,
+          1
+        );
+      }
   
       slide.style.opacity = String(opacity);
       slide.style.visibility = "visible";
       slide.style.pointerEvents =
         opacity <= 0.01 ? "none" : "auto";
   
-      slide.classList.toggle("is--past", progress < -0.01);
-      slide.classList.toggle(
-        "is--active",
-        Math.abs(progress) <= 0.01
-      );
-      slide.classList.toggle("is--future", progress > 0.01);
+      const isLeft = distanceFromAnchor < -1;
+  
+      slide.classList.toggle("is--left", isLeft);
+      slide.classList.toggle("is--visible-side", !isLeft);
   
       slide.setAttribute(
         "aria-hidden",
