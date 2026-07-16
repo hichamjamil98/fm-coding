@@ -1,0 +1,196 @@
+/* ==========================================================================
+   HOME — SWIPER BASE
+========================================================================== */
+
+[data-home-swiper] {
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+  }
+  
+  [data-home-swiper] .swiper-wrapper {
+    align-items: stretch;
+  }
+  
+  [data-home-swiper] .swiper-slide {
+    height: auto;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  
+    transform: translate3d(0, 0, 0);
+  
+    transition:
+      opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0.65s ease,
+      transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+  
+    will-change: transform, opacity;
+  }
+  
+  /* ==========================================================================
+     PREVIOUS SLIDES
+  
+     Any slide that has already passed to the left becomes invisible.
+  ========================================================================== */
+  
+  [data-home-swiper] .swiper-slide.is--past {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  
+  /* ==========================================================================
+     ACTIVE / NEXT SLIDES
+  ========================================================================== */
+  
+  [data-home-swiper] .swiper-slide.is--active,
+  [data-home-swiper] .swiper-slide.is--next {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  /* ==========================================================================
+     SLIDE CONTENT
+  ========================================================================== */
+  
+  [data-home-swiper] .swiper--inside-item {
+    height: 100%;
+  }
+  
+  [data-home-swiper] .swiper--home-title,
+  [data-home-swiper] .swiper--image-wrapper {
+    transition:
+      opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+  
+    will-change: transform, opacity;
+  }
+  
+  /*
+    Upcoming slides remain visible, but their content is slightly offset.
+    This gives depth without reducing their opacity.
+  */
+  
+  [data-home-swiper] .swiper-slide.is--next .swiper--home-title,
+  [data-home-swiper] .swiper-slide.is--next .swiper--image-wrapper {
+    transform: translateX(0.5rem);
+  }
+  
+  [data-home-swiper] .swiper-slide.is--active .swiper--home-title,
+  [data-home-swiper] .swiper-slide.is--active .swiper--image-wrapper {
+    transform: translateX(0);
+  }
+  
+  /* ==========================================================================
+     IMAGES
+  ========================================================================== */
+  
+  [data-home-swiper] .swiper--image-wrapper {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  [data-home-swiper] .swiper--image-wrapper img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  
+    transform: scale(1.02);
+  
+    transition:
+      transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  
+  [data-home-swiper] .swiper-slide.is--active .swiper--image-wrapper img {
+    transform: scale(1);
+  }
+  
+  /* ==========================================================================
+     OPTIONAL NAVIGATION
+     Usage:
+     data-swiper-prev
+     data-swiper-next
+  ========================================================================== */
+  
+  [data-swiper-prev],
+  [data-swiper-next],
+  [data-home-swiper] .swiper-button-prev,
+  [data-home-swiper] .swiper-button-next {
+    cursor: pointer;
+    transition:
+      opacity 0.35s ease,
+      transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  
+  [data-swiper-prev].swiper-button-disabled,
+  [data-swiper-next].swiper-button-disabled,
+  [data-home-swiper] .swiper-button-prev.swiper-button-disabled,
+  [data-home-swiper] .swiper-button-next.swiper-button-disabled {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  
+  @media (hover: hover) and (pointer: fine) {
+    [data-swiper-prev]:hover,
+    [data-home-swiper] .swiper-button-prev:hover {
+      transform: translateX(-0.25rem);
+    }
+  
+    [data-swiper-next]:hover,
+    [data-home-swiper] .swiper-button-next:hover {
+      transform: translateX(0.25rem);
+    }
+  }
+  
+  /* ==========================================================================
+     OPTIONAL PAGINATION
+  ========================================================================== */
+  
+  [data-swiper-pagination],
+  [data-home-swiper] .swiper-pagination {
+    position: relative;
+  }
+  
+  [data-home-swiper] .swiper-pagination-bullet {
+    opacity: 0.35;
+    transition:
+      opacity 0.3s ease,
+      transform 0.3s ease;
+  }
+  
+  [data-home-swiper] .swiper-pagination-bullet-active {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  
+  /* ==========================================================================
+     TABLET / MOBILE
+  ========================================================================== */
+  
+  @media screen and (max-width: 991px) {
+    [data-home-swiper] {
+      overflow: hidden;
+    }
+  
+    [data-home-swiper] .swiper-slide.is--next .swiper--home-title,
+    [data-home-swiper] .swiper-slide.is--next .swiper--image-wrapper {
+      transform: translateX(0.25rem);
+    }
+  }
+  
+  /* ==========================================================================
+     REDUCED MOTION
+  ========================================================================== */
+  
+  @media (prefers-reduced-motion: reduce) {
+    [data-home-swiper] .swiper-slide,
+    [data-home-swiper] .swiper--home-title,
+    [data-home-swiper] .swiper--image-wrapper,
+    [data-home-swiper] .swiper--image-wrapper img,
+    [data-swiper-prev],
+    [data-swiper-next] {
+      transition-duration: 0.01ms !important;
+    }
+  }
