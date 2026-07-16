@@ -25,12 +25,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const wrapper = sliderElement.querySelector(".swiper-wrapper");
       const slides = sliderElement.querySelectorAll(".swiper-slide");
   
-      if (!wrapper || !slides.length) return;
+      if (!wrapper || slides.length < 2) return;
   
       sliderElement.dataset.swiperInitialized = "true";
       sliderElement.setAttribute("data-home-swiper", "");
   
-      const section = sliderElement.closest(".section") || sliderElement.parentElement;
+      const section =
+        sliderElement.closest(".section") ||
+        sliderElement.parentElement;
   
       const previousButton =
         section?.querySelector("[data-swiper-prev]") ||
@@ -47,10 +49,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const swiperOptions = {
         slidesPerView: 1,
         spaceBetween: 16,
-        speed: 850,
+  
+        loop: true,
+        loopAdditionalSlides: 2,
+  
+        speed: 900,
   
         grabCursor: true,
         watchSlidesProgress: true,
+  
         observer: true,
         observeParents: true,
         resizeObserver: true,
@@ -61,8 +68,12 @@ document.addEventListener("DOMContentLoaded", () => {
         threshold: 5,
         touchStartPreventDefault: false,
   
-        loop: false,
-        rewind: false,
+        autoplay: {
+          delay: 4000,
+          disableOnInteraction: false,
+          pauseOnMouseEnter: true,
+          waitForTransition: true
+        },
   
         keyboard: {
           enabled: true,
@@ -72,9 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
         a11y: {
           enabled: true,
           prevSlideMessage: "Slide précédente",
-          nextSlideMessage: "Slide suivante",
-          firstSlideMessage: "Première slide",
-          lastSlideMessage: "Dernière slide"
+          nextSlideMessage: "Slide suivante"
         },
   
         breakpoints: {
@@ -95,6 +104,10 @@ document.addEventListener("DOMContentLoaded", () => {
         },
   
         on: {
+          beforeInit(swiper) {
+            swiper.el.classList.add("is--swiper-ready");
+          },
+  
           init(swiper) {
             updateHomeSlideStates(swiper);
           },
@@ -108,6 +121,10 @@ document.addEventListener("DOMContentLoaded", () => {
           },
   
           transitionEnd(swiper) {
+            updateHomeSlideStates(swiper);
+          },
+  
+          loopFix(swiper) {
             updateHomeSlideStates(swiper);
           },
   
@@ -139,23 +156,23 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   /* ==========================================================================
-     SLIDE STATES
-  
-     - Slides already passed to the left receive .is--past.
-     - The active slide receives .is--active.
-     - Upcoming slides receive .is--next.
+     SLIDE STATES — LOOP SAFE
   ========================================================================== */
   
   function updateHomeSlideStates(swiper) {
-    swiper.slides.forEach((slide, index) => {
-      const isPast = index < swiper.activeIndex;
-      const isActive = index === swiper.activeIndex;
-      const isNext = index > swiper.activeIndex;
+    swiper.slides.forEach((slide) => {
+      const isPrevious = slide.classList.contains("swiper-slide-prev");
+      const isActive = slide.classList.contains("swiper-slide-active");
+      const isNext = slide.classList.contains("swiper-slide-next");
   
-      slide.classList.toggle("is--past", isPast);
+      slide.classList.toggle("is--past", isPrevious);
       slide.classList.toggle("is--active", isActive);
       slide.classList.toggle("is--next", isNext);
   
-      slide.setAttribute("aria-hidden", isPast ? "true" : "false");
+      if (!isPrevious && !isActive && !isNext) {
+        slide.classList.remove("is--past", "is--active", "is--next");
+      }
+  
+      slide.setAttribute("aria-hidden", isPrevious ? "true" : "false");
     });
   }
