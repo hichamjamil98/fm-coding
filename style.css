@@ -567,3 +567,46 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+/* ==========================================================================
+   BUTTON ARROW HOVER
+========================================================================== */
+
+.button {
+  --button-accent: #09C995;
+}
+
+.button--circle {
+  position: relative;
+  overflow: hidden;
+}
+
+.button--circle svg,
+.button--circle img,
+.button--circle i {
+  transition:
+    transform .55s cubic-bezier(.22,1,.36,1),
+    color .35s ease,
+    stroke .35s ease,
+    fill .35s ease;
+
+  transform: translateX(0);
+  color: var(--button-accent);
+}
+
+.button--circle svg * {
+  stroke: currentColor;
+}
+
+/* Hover */
+
+@media (hover:hover) and (pointer:fine){
+
+  .button:hover .button--circle svg,
+  .button:hover .button--circle img,
+  .button:hover .button--circle i{
+
+    transform: translateX(.55rem);
+
+  }
+
+}
