@@ -61,7 +61,6 @@ body {
 ========================================================================== */
 
 .navbar {
-  position: relative;
   z-index: 999;
 }
 
@@ -171,19 +170,28 @@ body {
 }
 
 /* ==========================================================================
-   DESKTOP NAVBAR BACKGROUND ON SCROLL
-   The original Webflow background stays active at the top.
+   DESKTOP NAVBAR MASK ON SCROLL
+   Webflow keeps control of position: fixed and the navbar layout.
 ========================================================================== */
 
 @media screen and (min-width: 992px) {
-  .navbar {
-    transition:
-      background-color 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-      color 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  /*
+    At the top of the page, the black mask is hidden.
+    The original navbar appearance created in Webflow remains visible.
+  */
+  .navbar .navbar--mask {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity;
   }
 
-  .navbar.is--scrolled {
-    background-color: #000000 !important;
+  /*
+    Once the page leaves the top, only the mask fades in.
+    The navbar itself keeps its Webflow fixed positioning.
+  */
+  .navbar.is--scrolled .navbar--mask {
+    opacity: 1;
   }
 }
 
