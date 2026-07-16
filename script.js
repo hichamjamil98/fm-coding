@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initLoadAnimations(EASE);
   initLoadingAnimations(EASE);
   initNavbar(EASE);
+  initNavbarScrollState();
   initScrollAnimations(EASE);
 });
 
@@ -600,7 +601,52 @@ function initNavbar(EASE) {
 }
 
 /* ==========================================================================
-   5. FULL PAGE LOADING ANIMATION
+   5. DESKTOP NAVBAR BACKGROUND ON SCROLL
+   Desktop only:
+   - At the top: keeps the Webflow background.
+   - After scrolling: adds .is--scrolled.
+========================================================================== */
+
+function initNavbarScrollState() {
+  const navbar = document.querySelector(".navbar");
+  const DESKTOP_BREAKPOINT = 992;
+  const SCROLL_THRESHOLD = 8;
+
+  if (!navbar) return;
+
+  let ticking = false;
+
+  function updateNavbarState() {
+    const isDesktop = window.innerWidth >= DESKTOP_BREAKPOINT;
+    const hasScrolled = window.scrollY > SCROLL_THRESHOLD;
+
+    if (isDesktop && hasScrolled) {
+      navbar.classList.add("is--scrolled");
+    } else {
+      navbar.classList.remove("is--scrolled");
+    }
+
+    ticking = false;
+  }
+
+  function requestUpdate() {
+    if (ticking) return;
+
+    ticking = true;
+    window.requestAnimationFrame(updateNavbarState);
+  }
+
+  window.addEventListener("scroll", requestUpdate, {
+    passive: true
+  });
+
+  window.addEventListener("resize", requestUpdate);
+
+  updateNavbarState();
+}
+
+/* ==========================================================================
+   6. FULL PAGE LOADING ANIMATION
    Usage:
    animation="loading"
 
@@ -639,7 +685,7 @@ function initLoadingAnimations(EASE) {
 }
 
 /* ==========================================================================
-   6. SCROLL ANIMATIONS
+   7. SCROLL ANIMATIONS
    Usage:
    animation="fade"
    animation="fade-up"

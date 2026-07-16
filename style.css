@@ -171,6 +171,149 @@ body {
 }
 
 /* ==========================================================================
+   DESKTOP NAVBAR BACKGROUND ON SCROLL
+   The original Webflow background stays active at the top.
+========================================================================== */
+
+@media screen and (min-width: 992px) {
+  .navbar {
+    transition:
+      background-color 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+      color 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .navbar.is--scrolled {
+    background-color: #000000 !important;
+  }
+}
+
+/* ==========================================================================
+   FOOTER LINKS HOVER
+========================================================================== */
+
+.footer a {
+  position: relative;
+  display: inline-block;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    color 0.35s ease,
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.footer a::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -0.15em;
+  left: 0;
+  height: 1px;
+  background-color: currentColor;
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .footer a:hover {
+    transform: translateX(0.25rem);
+  }
+
+  .footer a:hover::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
+/* ==========================================================================
+   BUTTON — SMOOTH TEXT REVEAL
+   Expected structure:
+   .button
+     .button--circle
+       svg
+     p
+========================================================================== */
+
+.button {
+  --button-accent: #09c995;
+  --button-circle-size: 5.8rem;
+  --button-text-gap: 1.25rem;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  color: var(--button-accent);
+  text-decoration: none;
+  overflow: visible;
+}
+
+.button--circle {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-circle-size);
+  height: var(--button-circle-size);
+  border-radius: 50%;
+  overflow: hidden;
+  color: var(--button-accent);
+  transition:
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.4s ease;
+  will-change: transform;
+}
+
+.button--circle svg,
+.button--circle path,
+.button--circle line,
+.button--circle rect {
+  color: var(--button-accent);
+  stroke: currentColor;
+}
+
+.button p {
+  max-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+  color: var(--button-accent);
+  white-space: nowrap;
+  transform: translateX(-0.75rem);
+  transition:
+    max-width 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    margin-left 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.35s ease 0.05s,
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: max-width, opacity, transform;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .button:hover .button--circle {
+    transform: scale(1.04);
+  }
+
+  .button:hover p {
+    max-width: 18rem;
+    margin-left: var(--button-text-gap);
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* On touch devices, keep the text visible because there is no hover. */
+
+@media (hover: none), (pointer: coarse) {
+  .button p {
+    max-width: 18rem;
+    margin-left: var(--button-text-gap);
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ==========================================================================
    LOAD ANIMATIONS
    Usage:
    animation="load"
