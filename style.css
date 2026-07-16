@@ -13,6 +13,8 @@ body {
 
 /* ==========================================================================
    BUTTON CHARACTER HOVER
+   Usage:
+   <span data-button-animate-chars>Texte</span>
 ========================================================================== */
 
 [data-button-animate-chars] {
@@ -29,15 +31,19 @@ body {
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .button:hover [data-button-animate-chars] span,
   .btn:hover [data-button-animate-chars] span,
-  .nav--link:hover [data-button-animate-chars] span,
-  .nav--left:hover [data-button-animate-chars] span {
+  .navbar--link:hover [data-button-animate-chars] span {
     transform: translateY(-1.25em);
   }
 }
 
 /* ==========================================================================
    BUTTON ROD HOVER
+   Expected structure:
+   .btn--wrapper
+     .btn--rod
+     p
 ========================================================================== */
 
 .btn--wrapper {
@@ -50,47 +56,80 @@ body {
 }
 
 /* ==========================================================================
-   SIDE NAV
+   NAVBAR — BASE
 ========================================================================== */
 
-.side--nav {
-  display: none;
-  opacity: 0;
-  pointer-events: none;
+.navbar {
+  position: relative;
+  z-index: 999;
 }
 
-.side--nav.is--open {
-  pointer-events: auto;
+.container--navbar {
+  position: relative;
+  z-index: 3;
 }
 
-.side--nav-menu {
-  will-change: transform, opacity;
+.navbar-menu-trigger {
+  position: relative;
+  z-index: 5;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.nav--left.is--menu-open,
-.nav--left.is--menu-open .menu--to-open,
-.nav--left.is--menu-open .menu--to-close {
-  color: #fdfdfd !important;
+.navbar-menu-trigger:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 0.25rem;
 }
 
 /* ==========================================================================
-   MENU ICONS
+   NAVBAR — MASK
 ========================================================================== */
 
-.menu--trigger {
-  position: relative;
+.navbar--mask {
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
 }
 
-.menu--to-open,
-.menu--to-close {
+.navbar.is--open .navbar--mask {
+  pointer-events: auto;
+}
+
+/* ==========================================================================
+   NAVBAR — MENU
+========================================================================== */
+
+.nav--menu {
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+.navbar.is--open .nav--menu {
+  pointer-events: auto;
+}
+
+.navbar--link {
+  will-change: transform, opacity, filter;
+}
+
+/* ==========================================================================
+   NAVBAR — ICONS
+========================================================================== */
+
+.navbar--menu-open,
+.navbar--menu-close {
   display: block;
   width: 100%;
   height: auto;
   color: currentColor;
   transition: none;
+  will-change: transform, opacity;
 }
 
-.menu--to-close {
+.navbar--menu-close {
   position: absolute;
   inset: 0;
   opacity: 0;
@@ -99,21 +138,21 @@ body {
 }
 
 /* ==========================================================================
-   SIDE NAV DESKTOP HOVER
+   NAVBAR — DESKTOP LINK HOVER
 ========================================================================== */
 
 @media (hover: hover) and (pointer: fine) {
-  .side--nav-menu .nav--link {
+  .nav--menu .navbar--link {
     transition:
       opacity 0.35s ease,
       transform 0.35s ease;
   }
 
-  .side--nav-menu:hover .nav--link {
+  .nav--menu:hover .navbar--link {
     opacity: 0.45;
   }
 
-  .side--nav-menu .nav--link:hover {
+  .nav--menu .navbar--link:hover {
     opacity: 1;
     transform: translateX(0.4rem);
   }
@@ -121,6 +160,12 @@ body {
 
 /* ==========================================================================
    LOAD ANIMATIONS
+   Usage:
+   animation="load"
+   animation="load-up"
+   animation="load-left"
+   animation="load-right"
+   animation="load-split"
 ========================================================================== */
 
 [animation="load"],
@@ -146,7 +191,24 @@ body {
 }
 
 /* ==========================================================================
-   FADE / SPLIT ANIMATIONS
+   FULL PAGE LOADING ANIMATION
+   Usage:
+   animation="loading"
+========================================================================== */
+
+[animation="loading"] {
+  will-change: transform, opacity;
+}
+
+/* ==========================================================================
+   SCROLL ANIMATIONS
+   Usage:
+   animation="fade"
+   animation="fade-up"
+   animation="fade-left"
+   animation="fade-right"
+   animation="fade-stagger"
+   animation="fade-split"
 ========================================================================== */
 
 [animation="fade"],
@@ -170,6 +232,13 @@ body {
 
 .fade-split__line {
   display: block;
+}
+
+/* Fix for the custom attribute found in the project. */
+
+[animation="fade--fromright"] {
+  transform: translate3d(0, 0, 0);
+  will-change: transform, opacity;
 }
 
 /* ==========================================================================
@@ -262,7 +331,6 @@ body {
 
 /* ==========================================================================
    VIMEO VISUAL STATES
-   These rules animate existing Vimeo player states.
 ========================================================================== */
 
 .vimeo-player__placeholder,
@@ -348,7 +416,7 @@ body {
   }
 
   [data-button-animate-chars] span,
-  .side--nav-menu .nav--link,
+  .nav--menu .navbar--link,
   .hero--title > div p,
   .vimeo-player__placeholder,
   .vimeo-bg__placeholder,
