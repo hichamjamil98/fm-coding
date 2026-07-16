@@ -170,27 +170,6 @@ body {
 }
 
 /* ==========================================================================
-   DESKTOP NAVBAR MASK ON SCROLL
-   The mask stays visible at all times.
-   Only its background color changes.
-========================================================================== */
-
-@media screen and (min-width: 992px) {
-  .navbar .navbar--mask {
-    opacity: 1 !important;
-    visibility: visible !important;
-    pointer-events: none;
-    background-color: rgba(0, 0, 0, 0);
-    transition: background-color 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-    will-change: background-color;
-  }
-
-  .navbar.is--scrolled .navbar--mask {
-    background-color: #000000;
-  }
-}
-
-/* ==========================================================================
    FOOTER LINKS HOVER
 ========================================================================== */
 
