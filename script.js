@@ -235,6 +235,8 @@ function initLoadAnimations(EASE) {
 ========================================================================== */
 
 function initNavbar(EASE) {
+  const MOBILE_BREAKPOINT = 991;
+
   const navbar = document.querySelector(".navbar");
   const trigger = document.querySelector(".navbar-menu-trigger");
   const navMenu = document.querySelector(".nav--menu");
@@ -245,46 +247,12 @@ function initNavbar(EASE) {
   if (!navbar || !trigger || !navMenu) return;
 
   const links = navMenu.querySelectorAll(".navbar--link");
+
   let isOpen = false;
   let timeline = null;
 
-  trigger.setAttribute("role", "button");
-  trigger.setAttribute("tabindex", "0");
-  trigger.setAttribute("aria-expanded", "false");
-
-  gsap.set(navMenu, {
-    display: "none",
-    opacity: 0,
-    pointerEvents: "none"
-  });
-
-  gsap.set(links, {
-    opacity: 0,
-    y: "1.25rem",
-    filter: "blur(6px)"
-  });
-
-  if (mask) {
-    gsap.set(mask, {
-      opacity: 0,
-      pointerEvents: "none"
-    });
-  }
-
-  if (iconOpen) {
-    gsap.set(iconOpen, {
-      opacity: 1,
-      scale: 1,
-      rotate: 0
-    });
-  }
-
-  if (iconClose) {
-    gsap.set(iconClose, {
-      opacity: 0,
-      scale: 0.75,
-      rotate: -90
-    });
+  function isMobileMenu() {
+    return window.innerWidth <= MOBILE_BREAKPOINT;
   }
 
   function lockScroll() {
@@ -297,10 +265,93 @@ function initNavbar(EASE) {
     document.body.classList.remove("is--locked");
   }
 
+  function resetDesktopState() {
+    isOpen = false;
+
+    if (timeline) {
+      timeline.kill();
+      timeline = null;
+    }
+
+    navbar.classList.remove("is--open");
+    trigger.setAttribute("aria-expanded", "false");
+    unlockScroll();
+
+    gsap.set(navMenu, {
+      clearProps: "all"
+    });
+
+    gsap.set(links, {
+      clearProps: "all"
+    });
+
+    if (mask) {
+      gsap.set(mask, {
+        clearProps: "all"
+      });
+    }
+
+    if (iconOpen) {
+      gsap.set(iconOpen, {
+        clearProps: "all"
+      });
+    }
+
+    if (iconClose) {
+      gsap.set(iconClose, {
+        clearProps: "all"
+      });
+    }
+  }
+
+  function setMobileInitialState() {
+    isOpen = false;
+
+    navbar.classList.remove("is--open");
+    trigger.setAttribute("aria-expanded", "false");
+    unlockScroll();
+
+    gsap.set(navMenu, {
+      display: "none",
+      opacity: 0,
+      pointerEvents: "none"
+    });
+
+    gsap.set(links, {
+      opacity: 0,
+      y: "1.25rem",
+      filter: "blur(6px)"
+    });
+
+    if (mask) {
+      gsap.set(mask, {
+        opacity: 0,
+        pointerEvents: "none"
+      });
+    }
+
+    if (iconOpen) {
+      gsap.set(iconOpen, {
+        opacity: 1,
+        scale: 1,
+        rotate: 0
+      });
+    }
+
+    if (iconClose) {
+      gsap.set(iconClose, {
+        opacity: 0,
+        scale: 0.75,
+        rotate: -90
+      });
+    }
+  }
+
   function openNavbar() {
-    if (isOpen) return;
+    if (!isMobileMenu() || isOpen) return;
 
     isOpen = true;
+
     navbar.classList.add("is--open");
     trigger.setAttribute("aria-expanded", "true");
     lockScroll();
@@ -375,15 +426,26 @@ function initNavbar(EASE) {
     }
   }
 
-  function closeNavbar() {
-    if (!isOpen) return;
+  function closeNavbar(immediate = false) {
+    if (!isMobileMenu()) {
+      resetDesktopState();
+      return;
+    }
+
+    if (!isOpen && !immediate) return;
 
     isOpen = false;
+
     navbar.classList.remove("is--open");
     trigger.setAttribute("aria-expanded", "false");
     unlockScroll();
 
     if (timeline) timeline.kill();
+
+    if (immediate) {
+      setMobileInitialState();
+      return;
+    }
 
     timeline = gsap.timeline();
 
@@ -458,16 +520,33 @@ function initNavbar(EASE) {
   }
 
   function toggleNavbar() {
+    if (!isMobileMenu()) return;
     isOpen ? closeNavbar() : openNavbar();
   }
 
+  function applyResponsiveState() {
+    if (isMobileMenu()) {
+      setMobileInitialState();
+    } else {
+      resetDesktopState();
+    }
+  }
+
+  trigger.setAttribute("role", "button");
+  trigger.setAttribute("tabindex", "0");
+  trigger.setAttribute("aria-expanded", "false");
+
   trigger.addEventListener("click", (event) => {
+    if (!isMobileMenu()) return;
+
     event.preventDefault();
     event.stopPropagation();
+
     toggleNavbar();
   });
 
   trigger.addEventListener("keydown", (event) => {
+    if (!isMobileMenu()) return;
     if (event.key !== "Enter" && event.key !== " ") return;
 
     event.preventDefault();
@@ -475,11 +554,15 @@ function initNavbar(EASE) {
   });
 
   if (mask) {
-    mask.addEventListener("click", closeNavbar);
+    mask.addEventListener("click", () => {
+      if (isMobileMenu()) {
+        closeNavbar();
+      }
+    });
   }
 
   document.addEventListener("pointerdown", (event) => {
-    if (!isOpen) return;
+    if (!isMobileMenu() || !isOpen) return;
     if (navMenu.contains(event.target)) return;
     if (trigger.contains(event.target)) return;
     if (mask && mask.contains(event.target)) return;
@@ -488,14 +571,32 @@ function initNavbar(EASE) {
   });
 
   window.addEventListener("keydown", (event) => {
+    if (!isMobileMenu()) return;
+
     if (event.key === "Escape") {
       closeNavbar();
     }
   });
 
   links.forEach((link) => {
-    link.addEventListener("click", closeNavbar);
+    link.addEventListener("click", () => {
+      if (isMobileMenu()) {
+        closeNavbar();
+      }
+    });
   });
+
+  let resizeTimer;
+
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+
+    resizeTimer = setTimeout(() => {
+      applyResponsiveState();
+    }, 150);
+  });
+
+  applyResponsiveState();
 }
 
 /* ==========================================================================
