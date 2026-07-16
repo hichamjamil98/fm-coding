@@ -1,0 +1,364 @@
+/* ==========================================================================
+   GLOBAL FIXES
+========================================================================== */
+
+html.is--locked,
+body.is--locked {
+  overflow: hidden !important;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* ==========================================================================
+   BUTTON CHARACTER HOVER
+========================================================================== */
+
+[data-button-animate-chars] {
+  display: inline-block;
+  overflow: hidden;
+}
+
+[data-button-animate-chars] span {
+  position: relative;
+  display: inline-block;
+  text-shadow: 0 1.25em currentColor;
+  transform: translateY(0);
+  transition: transform 0.55s cubic-bezier(0.625, 0.05, 0, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover [data-button-animate-chars] span,
+  .nav--link:hover [data-button-animate-chars] span,
+  .nav--left:hover [data-button-animate-chars] span {
+    transform: translateY(-1.25em);
+  }
+}
+
+/* ==========================================================================
+   BUTTON ROD HOVER
+========================================================================== */
+
+.btn--wrapper {
+  cursor: pointer;
+}
+
+.btn--rod {
+  transform-origin: left center;
+  will-change: transform;
+}
+
+/* ==========================================================================
+   SIDE NAV
+========================================================================== */
+
+.side--nav {
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.side--nav.is--open {
+  pointer-events: auto;
+}
+
+.side--nav-menu {
+  will-change: transform, opacity;
+}
+
+.nav--left.is--menu-open,
+.nav--left.is--menu-open .menu--to-open,
+.nav--left.is--menu-open .menu--to-close {
+  color: #fdfdfd !important;
+}
+
+/* ==========================================================================
+   MENU ICONS
+========================================================================== */
+
+.menu--trigger {
+  position: relative;
+}
+
+.menu--to-open,
+.menu--to-close {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: currentColor;
+  transition: none;
+}
+
+.menu--to-close {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.75) rotate(-90deg);
+}
+
+/* ==========================================================================
+   SIDE NAV DESKTOP HOVER
+========================================================================== */
+
+@media (hover: hover) and (pointer: fine) {
+  .side--nav-menu .nav--link {
+    transition:
+      opacity 0.35s ease,
+      transform 0.35s ease;
+  }
+
+  .side--nav-menu:hover .nav--link {
+    opacity: 0.45;
+  }
+
+  .side--nav-menu .nav--link:hover {
+    opacity: 1;
+    transform: translateX(0.4rem);
+  }
+}
+
+/* ==========================================================================
+   LOAD ANIMATIONS
+========================================================================== */
+
+[animation="load"],
+[animation="load-up"],
+[animation="load-left"],
+[animation="load-right"],
+[animation="load-split"] {
+  will-change: transform, opacity;
+}
+
+[animation="load-split"] {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.load-split__line-mask {
+  display: block;
+  overflow: hidden;
+}
+
+.load-split__line {
+  display: block;
+}
+
+/* ==========================================================================
+   FADE / SPLIT ANIMATIONS
+========================================================================== */
+
+[animation="fade"],
+[animation="fade-up"],
+[animation="fade-left"],
+[animation="fade-right"],
+[animation="fade-stagger"] > *,
+[animation="fade-split"] {
+  will-change: transform, opacity;
+}
+
+[animation="fade-split"] {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.fade-split__line-mask {
+  display: block;
+  overflow: hidden;
+}
+
+.fade-split__line {
+  display: block;
+}
+
+/* ==========================================================================
+   HERO TITLE HOVER
+   Expected structure:
+   .hero--title
+     div > p
+     a > .brand--hero
+     div > p
+========================================================================== */
+
+.hero--title {
+  --text-gap: 1.5rem;
+  --animation-duration: 0.85s;
+  --logo-width: 2.8rem;
+
+  position: relative;
+  display: inline-block;
+  width: var(--logo-width);
+  overflow: visible;
+  cursor: pointer;
+}
+
+.hero--title > a {
+  position: relative;
+  z-index: 3;
+  display: block;
+  width: 100%;
+  height: auto;
+  transform: none !important;
+  transition: none !important;
+}
+
+.hero--title .brand--hero {
+  display: block;
+  width: 100%;
+  height: auto;
+  transform: none !important;
+  transition: none !important;
+  will-change: auto;
+}
+
+.hero--title > div {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  display: flex;
+  width: max-content;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.hero--title > div p {
+  margin: 0;
+  opacity: 0;
+  filter: blur(4px);
+  transition:
+    transform var(--animation-duration) cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.45s ease,
+    filter var(--animation-duration) cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity, filter;
+}
+
+.hero--title > div:first-child {
+  right: calc(100% + var(--text-gap));
+  justify-content: flex-end;
+}
+
+.hero--title > div:first-child p {
+  transform: translateX(calc(100% + var(--text-gap)));
+}
+
+.hero--title > div:last-child {
+  left: calc(100% + var(--text-gap));
+  justify-content: flex-start;
+}
+
+.hero--title > div:last-child p {
+  transform: translateX(calc(-100% - var(--text-gap)));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hero--title:hover > div p {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateX(0);
+  }
+}
+
+/* ==========================================================================
+   VIMEO VISUAL STATES
+   These rules animate existing Vimeo player states.
+========================================================================== */
+
+.vimeo-player__placeholder,
+.vimeo-bg__placeholder,
+.vimeo-player__dark,
+.vimeo-player__interface,
+.vimeo-player__loading,
+.vimeo-player__play,
+.vimeo-player__pause,
+.vimeo-bg__play,
+.vimeo-bg__pause {
+  transition: opacity 0.45s ease;
+}
+
+.vimeo-player[data-vimeo-activated="true"][data-vimeo-loaded="true"]
+  .vimeo-player__placeholder,
+.vimeo-bg[data-vimeo-activated="true"][data-vimeo-loaded="true"]
+  .vimeo-bg__placeholder {
+  opacity: 0;
+}
+
+.vimeo-player[data-vimeo-playing="false"] .vimeo-player__dark {
+  opacity: 0.33;
+}
+
+.vimeo-player[data-vimeo-activated="false"][data-vimeo-playing="false"]
+  .vimeo-player__dark,
+.vimeo-player[data-vimeo-activated="true"][data-vimeo-loaded="true"]
+  .vimeo-player__dark {
+  opacity: 0;
+}
+
+.vimeo-player .vimeo-player__loading,
+.vimeo-player .vimeo-player__interface {
+  opacity: 0;
+}
+
+.vimeo-player[data-vimeo-playing="true"] .vimeo-player__loading {
+  opacity: 1;
+}
+
+.vimeo-player[data-vimeo-playing="true"][data-vimeo-loaded="true"]
+  .vimeo-player__loading {
+  opacity: 0;
+}
+
+.vimeo-player[data-vimeo-activated="true"][data-vimeo-playing="false"]
+  .vimeo-player__interface,
+.vimeo-player[data-vimeo-activated="true"][data-vimeo-hover="true"]:hover
+  .vimeo-player__interface {
+  opacity: 1;
+}
+
+.vimeo-player[data-vimeo-playing="true"] .vimeo-player__play,
+.vimeo-player[data-vimeo-playing="false"] .vimeo-player__pause {
+  opacity: 0;
+}
+
+.vimeo-player[data-vimeo-playing="false"] .vimeo-player__play,
+.vimeo-player[data-vimeo-playing="true"] .vimeo-player__pause {
+  opacity: 1;
+}
+
+.vimeo-bg[data-vimeo-playing="true"] .vimeo-bg__play,
+.vimeo-bg[data-vimeo-playing="false"] .vimeo-bg__pause {
+  opacity: 0;
+}
+
+.vimeo-bg[data-vimeo-playing="false"] .vimeo-bg__play,
+.vimeo-bg[data-vimeo-playing="true"] .vimeo-bg__pause {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   REDUCED MOTION
+========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+
+  [data-button-animate-chars] span,
+  .side--nav-menu .nav--link,
+  .hero--title > div p,
+  .vimeo-player__placeholder,
+  .vimeo-bg__placeholder,
+  .vimeo-player__dark,
+  .vimeo-player__interface,
+  .vimeo-player__loading,
+  .vimeo-player__play,
+  .vimeo-player__pause,
+  .vimeo-bg__play,
+  .vimeo-bg__pause {
+    transition-duration: 0.01ms !important;
+  }
+}
