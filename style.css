@@ -570,43 +570,76 @@ body {
 /* ==========================================================================
    BUTTON ARROW HOVER
 ========================================================================== */
+/* ==========================================================================
+   BUTTON HOVER
+========================================================================== */
 
 .button {
   --button-accent: #09C995;
+  --button-text-gap: .55rem;
 }
 
 .button--circle {
   position: relative;
   overflow: hidden;
+  transition: transform .55s cubic-bezier(.22,1,.36,1);
 }
 
 .button--circle svg,
 .button--circle img,
 .button--circle i {
+  transform: translateX(0);
+  color: var(--button-accent);
   transition:
     transform .55s cubic-bezier(.22,1,.36,1),
     color .35s ease,
     stroke .35s ease,
     fill .35s ease;
-
-  transform: translateX(0);
-  color: var(--button-accent);
 }
 
 .button--circle svg * {
   stroke: currentColor;
 }
 
+/* Texte */
+
+.button p {
+  color: var(--button-accent);
+  margin: 0;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+
+  opacity: 0;
+  margin-left: 0;
+  transform: translateX(-.4rem);
+
+  transition:
+    max-width .7s cubic-bezier(.22,1,.36,1),
+    margin-left .7s cubic-bezier(.22,1,.36,1),
+    transform .7s cubic-bezier(.22,1,.36,1),
+    opacity .35s ease;
+}
+
 /* Hover */
 
-@media (hover:hover) and (pointer:fine){
+@media (hover: hover) and (pointer: fine) {
+
+  .button:hover .button--circle {
+    transform: scale(1.04);
+  }
 
   .button:hover .button--circle svg,
   .button:hover .button--circle img,
-  .button:hover .button--circle i{
+  .button:hover .button--circle i {
+    transform: translateX(.7rem);
+  }
 
-    transform: translateX(.55rem);
-
+  .button:hover p {
+    max-width: 18rem;
+    margin-left: var(--button-text-gap);
+    opacity: 1;
+    transform: translateX(-.15rem);
   }
 
 }
